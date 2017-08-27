@@ -1,0 +1,11 @@
+package com.song.general.gossip
+
+import com.song.general.gossip.net.Message
+
+/**
+ * Created by song on 2017/8/19.
+ */
+interface MessageHandler {
+
+    fun <T> handleMessage(message: Message<T>)
+}
