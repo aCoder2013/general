@@ -3,6 +3,7 @@ package com.song.general.gossip.net.handler
 import com.song.general.gossip.GossipAction
 import com.song.general.gossip.MessageHandler
 import com.song.general.gossip.net.Message
+import com.song.general.gossip.utils.JsonUtils
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import org.slf4j.LoggerFactory
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory
 class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
 
     init {
+        /*
+            register message handlers.
+         */
         messageHandlers.put(GossipAction.GOSSIP_SYN, GossipDigestSynMessageHandler())
     }
 
@@ -20,12 +24,12 @@ class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         val message = msg as Message
         message.action.let {
-            getHandler(it)?.handleMessage(message) ?: logger.warn("Ignore unknown message type : $message")
+            getHandler(it)?.handleMessage(message) ?: logger.warn("Ignore unknown message type : ${JsonUtils.toJson(message)}")
         }
     }
 
     @Throws(Exception::class)
-    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) = logger.error("read message failed", cause)
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) = logger.error("Process incoming message failed", cause)
 
     private fun getHandler(gossipAction: GossipAction): MessageHandler?
             = messageHandlers[gossipAction]
@@ -36,6 +40,5 @@ class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
                 .getLogger(InboundMessageDispatchHandler::class.java)
 
         private val messageHandlers = HashMap<GossipAction, MessageHandler>()
-
     }
 }

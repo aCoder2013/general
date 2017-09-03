@@ -3,6 +3,7 @@ package com.song.general.gossip.net.handler
 import com.song.general.gossip.MessageHandler
 import com.song.general.gossip.message.GossipDigestSynMessage
 import com.song.general.gossip.net.Message
+import com.song.general.gossip.utils.JsonUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -12,7 +13,7 @@ class GossipDigestSynMessageHandler : MessageHandler {
 
     override fun handleMessage(message: Message) {
         val digestSynMessage = message.payload as GossipDigestSynMessage
-        logger.trace("Received message $digestSynMessage")
+        logger.trace("Received message ${JsonUtils.toJson(message)}")
     }
 
     companion object {
