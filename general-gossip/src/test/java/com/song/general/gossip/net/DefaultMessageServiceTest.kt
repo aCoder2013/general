@@ -30,7 +30,7 @@ class DefaultMessageServiceTest {
         val messageClient = DefaultMessageClient()
         messageClient.start()
         val gossipDigest = GossipDigest(NetUtils.string2SocketAddress("127.0.0.1:2001"), 1L, 0)
-        val message = Message(GossipAction.GOSSIP_ACK, gossipDigest)
+        val message = Message(NetUtils.string2SocketAddress("127.0.0.1:8080"),GossipAction.GOSSIP_ACK, gossipDigest)
         Thread {
             try {
                 messageClient.sendOneWay(socketAddress, message)

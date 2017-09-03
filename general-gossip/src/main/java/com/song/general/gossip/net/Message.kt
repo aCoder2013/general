@@ -1,22 +1,20 @@
 package com.song.general.gossip.net
 
 import com.song.general.gossip.GossipAction
-import com.song.general.gossip.net.utils.NetUtils
+import com.song.general.gossip.net.support.GossipSocketAddress
 import java.io.Serializable
-import java.net.InetAddress
+import java.net.SocketAddress
 
 /**
  * Created by song on 2017/8/19.
  */
 class Message : Serializable {
-    val from: InetAddress
+    val from: SocketAddress
     var action: GossipAction
     var payload: Any
     var createTime: Long
 
-    constructor(action: GossipAction, payload: Any) : this(NetUtils.getLocalHost(), action, payload, System.currentTimeMillis())
-
-    constructor(from: InetAddress = NetUtils.getLocalHost(), action: GossipAction, payload: Any, createTime: Long = System.currentTimeMillis()) {
+    constructor(from: SocketAddress, action: GossipAction, payload: Any, createTime: Long = System.currentTimeMillis()) {
         this.from = from
         this.action = action
         this.payload = payload

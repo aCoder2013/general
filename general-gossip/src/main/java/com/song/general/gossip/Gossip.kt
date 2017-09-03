@@ -3,6 +3,7 @@ package com.song.general.gossip
 import com.google.common.collect.ImmutableList
 import com.song.general.gossip.concurrent.DefaultThreadFactory
 import com.song.general.gossip.message.GossipDigestSynMessage
+import com.song.general.gossip.net.LifeCycle
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.net.support.DefaultMessageClient
 import com.song.general.gossip.net.support.DefaultMessageServer
@@ -18,7 +19,7 @@ import kotlin.collections.ArrayList
 /**
  * Created by song on 2017/8/13.
  */
-class Gossip {
+class Gossip : LifeCycle {
 
     private val host: String
     private val port: Int
@@ -69,11 +70,16 @@ class Gossip {
         this.endpointsMap = ConcurrentHashMap<SocketAddress, EndpointState>()
     }
 
-    fun start() {
+    override fun start() {
         initSeedList()
         initLocalEndpoint()
         initMessageService()
         initScheduledTask()
+    }
+
+    override fun shutDown() {
+        messageClient.shutDown()
+        messageServer.shutDown()
     }
 
     inner class GossipTask : Runnable {
@@ -85,7 +91,7 @@ class Gossip {
                 logger.trace("Heartbeat of local endpoint is {}", endpointsMap[localSocketAddress]?.heartbeatState?.version ?: 0)
                 val gossipDigests = fetchRandomGossipDigests()
                 if (gossipDigests.isNotEmpty()) {
-                    val message = Message(GossipAction.GOSSIP_SYN, GossipDigestSynMessage(gossipDigests))
+                    val message = Message(localSocketAddress, GossipAction.GOSSIP_SYN, GossipDigestSynMessage(gossipDigests))
                     val sendToSeed = sendGossip2LiveEndpoints(message)
                     sendGossip2DeadEndpoints(message)
                     if (!sendToSeed || this@Gossip.liveEndpoints.size < this@Gossip.seeds.size) {
@@ -192,6 +198,8 @@ class Gossip {
     companion object {
 
         private val logger = LoggerFactory.getLogger(Gossip::class.java)
+
+        private val INSTANCE = Gossip()
     }
 
 }

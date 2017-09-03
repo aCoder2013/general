@@ -12,8 +12,10 @@ import org.slf4j.LoggerFactory
 class GossipDigestSynMessageHandler : MessageHandler {
 
     override fun handleMessage(message: Message) {
-        val digestSynMessage = message.payload as GossipDigestSynMessage
         logger.trace("Received message ${JsonUtils.toJson(message)}")
+        val from = message.from
+
+        val digestSynMessage = message.payload as GossipDigestSynMessage
     }
 
     companion object {
