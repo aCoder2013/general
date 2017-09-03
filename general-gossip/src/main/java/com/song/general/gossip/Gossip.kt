@@ -19,12 +19,9 @@ import kotlin.collections.ArrayList
 /**
  * Created by song on 2017/8/13.
  */
-class Gossip : LifeCycle {
+class Gossip(private val host: String, private val port: Int, private val seedProvider: SeedProvider) : LifeCycle {
 
-    private val host: String
-    private val port: Int
     private val localSocketAddress: SocketAddress
-    private val seedProvider: SeedProvider
 
     private val intervalInMillis = 1000L
 
@@ -54,11 +51,8 @@ class Gossip : LifeCycle {
 
     private val endpointsMap: ConcurrentHashMap<SocketAddress, EndpointState>
 
-    constructor(host: String, port: Int, seedProvider: SeedProvider) {
-        this.host = host
-        this.port = port
+    init {
         this.localSocketAddress = NetUtils.string2SocketAddress("$host:$port")
-        this.seedProvider = seedProvider
         this.scheduledGossipTaskExecutor = Executors.newSingleThreadScheduledExecutor(DefaultThreadFactory("Scheduled-Gossip-Task"))
         this.messageServer = DefaultMessageServer(localSocketAddress)
         this.messageClient = DefaultMessageClient()
