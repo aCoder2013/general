@@ -199,7 +199,6 @@ class Gossip : LifeCycle {
 
         private val logger = LoggerFactory.getLogger(Gossip::class.java)
 
-        private val INSTANCE = Gossip()
     }
 
 }
