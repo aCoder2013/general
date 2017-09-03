@@ -133,14 +133,14 @@ class GeneralClient {
                         if (body != null) {
                             val string = body.string()
                             val jsonObject = JSONObject.parseObject(string)
-                            if (jsonObject.getBoolean("success")!!) {
+                            if (jsonObject.getBoolean("success")) {
                                 val lists = jsonObject.getJSONArray("data")
                                 val size = lists.size
                                 for (i in 0..size - 1) {
                                     val serviceInfo = lists.getJSONObject(i)
                                     val ip = serviceInfo.getString("ip")
                                     val port = serviceInfo.getString("port")
-                                    services.add(ip + ":" + port)
+                                    services.add("$ip:$port")
                                 }
                                 return true
                             }
