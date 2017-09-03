@@ -2,13 +2,14 @@ package com.song.general.gossip.net.support
 
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
+import java.net.SocketAddress
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
  * Created by song on 2017/8/23.
  */
-class ChannelAdapter(private val address: String) {
+class ChannelAdapter(private val address: SocketAddress) {
 
     @Volatile var channelFuture: ChannelFuture? = null
         set(channelFuture) {

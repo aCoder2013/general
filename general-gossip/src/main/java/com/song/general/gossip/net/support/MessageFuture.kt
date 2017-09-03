@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by song on 2017/8/26.
  */
-class MessageFuture<T> {
+class MessageFuture {
 
     var isSuccess: Boolean = false
         set(success) {
@@ -14,7 +14,7 @@ class MessageFuture<T> {
             this.countDownLatch.countDown()
         }
 
-    var data: T? = null
+    var data: Any? = null
 
     var cause: Throwable? = null
 

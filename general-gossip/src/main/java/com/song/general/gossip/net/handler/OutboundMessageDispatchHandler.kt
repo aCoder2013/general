@@ -13,7 +13,7 @@ class OutboundMessageDispatchHandler : ChannelOutboundHandlerAdapter() {
 
     @Throws(Exception::class)
     override fun write(ctx: ChannelHandlerContext, msg: Any, promise: ChannelPromise) {
-        val message = msg as Message<*>
+        val message = msg as Message
     }
 
     @Throws(Exception::class)

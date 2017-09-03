@@ -1,12 +1,12 @@
 package com.song.general.gossip
 
 import java.io.Serializable
-import java.net.InetAddress
+import java.net.SocketAddress
 
 /**
  * Created by song on 2017/8/13.
  */
-class GossipDigest(private val inetAddress: InetAddress, private val version: Int) : Serializable {
+class GossipDigest(val socketAddress: SocketAddress, val generation: Long, val version: Int) : Serializable {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) {
@@ -21,18 +21,18 @@ class GossipDigest(private val inetAddress: InetAddress, private val version: In
         if (version != that!!.version) {
             return false
         }
-        return inetAddress == that.inetAddress
+        return socketAddress == that.socketAddress
     }
 
     override fun hashCode(): Int {
-        var result = inetAddress.hashCode()
+        var result = socketAddress.hashCode()
         result = 31 * result + version
         return result
     }
 
     override fun toString(): String {
         return "GossipDigest{" +
-                "inetAddress=" + inetAddress +
+                "inetAddress=" + socketAddress +
                 ", version=" + version +
                 '}'
     }

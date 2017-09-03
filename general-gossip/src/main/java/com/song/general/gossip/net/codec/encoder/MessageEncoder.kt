@@ -8,10 +8,10 @@ import io.netty.handler.codec.MessageToByteEncoder
 /**
  * Created by song on 2017/8/20.
  */
-class MessageEncoder : MessageToByteEncoder<Message<*>>() {
+class MessageEncoder : MessageToByteEncoder<Message>() {
 
     @Throws(Exception::class)
-    override fun encode(channelHandlerContext: ChannelHandlerContext, message: Message<*>,
+    override fun encode(channelHandlerContext: ChannelHandlerContext, message: Message,
                         byteBuf: ByteBuf) {
 
     }

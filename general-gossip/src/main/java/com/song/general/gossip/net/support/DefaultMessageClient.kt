@@ -4,7 +4,6 @@ import com.song.general.gossip.concurrent.DefaultThreadFactory
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.net.MessageClient
 import com.song.general.gossip.net.handler.InboundMessageDispatchHandler
-import com.song.general.gossip.net.utils.NetUtils
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelInitializer
@@ -20,8 +19,8 @@ import io.netty.handler.logging.LoggingHandler
 import io.netty.handler.timeout.IdleStateHandler
 import io.netty.util.concurrent.DefaultEventExecutorGroup
 import org.slf4j.LoggerFactory
+import java.net.SocketAddress
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -39,7 +38,7 @@ class DefaultMessageClient : MessageClient {
 
     private var createChannelLock: Lock? = null
 
-    private val channelCache = ConcurrentHashMap<String/*address of the node*/, ChannelAdapter>()
+    private val channelCache = ConcurrentHashMap<SocketAddress/*address of the node*/, ChannelAdapter>()
 
     override fun start() {
         logger.info("Start to init MessageClient")
@@ -81,8 +80,8 @@ class DefaultMessageClient : MessageClient {
     }
 
     @Throws(Exception::class)
-    override fun <T> sendOneWay(address: String, message: Message<T>) {
-        val channel = getOrCreateChannel(address)
+    override fun  sendOneWay(socketAddress: SocketAddress, message: Message) {
+        val channel = getOrCreateChannel(socketAddress)
         if (channel != null) {
             channel.writeAndFlush(message).addListener({ future ->
                 if (future.isSuccess) {
@@ -92,20 +91,20 @@ class DefaultMessageClient : MessageClient {
                 }
             })
         } else {
-            logger.error("send message $message to node[$address] failed")
+            logger.error("send message $message to node[$socketAddress] failed")
         }
     }
 
-    override fun <T> sendAsync(address: String, message: Message<T>): MessageFuture<T> {
+    override fun  sendAsync(socketAddress: SocketAddress, message: Message): MessageFuture {
         var channel: Channel? = null
         var cause: Throwable? = null
         try {
-            channel = getOrCreateChannel(address)
+            channel = getOrCreateChannel(socketAddress)
         } catch (e: Exception) {
             cause = e
         }
 
-        val messageFuture = MessageFuture<T>()
+        val messageFuture = MessageFuture()
         if (channel != null) {
             channel.writeAndFlush(message).addListener { future ->
                 if (future.isSuccess) {
@@ -125,56 +124,56 @@ class DefaultMessageClient : MessageClient {
     }
 
     @Throws(InterruptedException::class)
-    private fun getOrCreateChannel(address: String): Channel? {
-        var channelAdapter: ChannelAdapter? = this.channelCache[address]
+    private fun getOrCreateChannel(socketAddress: SocketAddress): Channel? {
+        var channelAdapter: ChannelAdapter? = this.channelCache[socketAddress]
         if (channelAdapter == null) {
-            channelAdapter = ChannelAdapter(address)
-            val channel = (this.channelCache as ConcurrentMap<String, ChannelAdapter>).putIfAbsent(address, channelAdapter)
+            channelAdapter = ChannelAdapter(socketAddress)
+            val channel = this.channelCache.putIfAbsent(socketAddress, channelAdapter)
             if (channel != null) {
                 channelAdapter = channel
             }
         }
         if (!channelAdapter.isOk) {
             if (this.createChannelLock!!.tryLock()) {
-                logger.info("Try to connect to node {} .", address)
+                logger.info("Try to connect to node {} .", socketAddress)
                 try {
                     val channelFuture = this.bootstrap
-                            .connect(NetUtils.string2SocketAddress(address))
+                            .connect(socketAddress)
                     if (channelFuture
                             .await(DEFAULT_CHANNEL_CONNECT_TIMEOUT_SECOND.toLong(), TimeUnit.SECONDS) && channelFuture.isDone) {
                         if (channelFuture.isSuccess) {
                             channelAdapter.channelFuture = channelFuture
                         } else if (channelFuture.isCancelled) {
                             throw RuntimeException(
-                                    "Connecting to node $address got cancelled.")
+                                    "Connecting to node $socketAddress got cancelled.")
                         } else {
                             throw RuntimeException(
-                                    "Connecting to node $address failed,detail :", channelFuture
+                                    "Connecting to node $socketAddress failed,detail :", channelFuture
                                     .cause())
                         }
                     } else {
-                        throw RuntimeException("Can't connect to " + address + " during "
+                        throw RuntimeException("Can't connect to " + socketAddress + " during "
                                 + DEFAULT_CHANNEL_CONNECT_TIMEOUT_SECOND + " seconds.")
                     }
                 } catch (e: Exception) {
-                    logger.error("createChannel: connect to node[{}] failed.", address, e)
+                    logger.error("createChannel: connect to node[{}] failed.", socketAddress, e)
                 } finally {
                     this.createChannelLock!!.unlock()
                 }
             } else {
                 logger.info(
-                        "Someone is trying to connect to node $address, so we'll just wait.")
+                        "Someone is trying to connect to node $socketAddress, so we'll just wait.")
                 val await = channelAdapter
                         .await(DEFAULT_CHANNEL_CONNECT_TIMEOUT_SECOND.toLong(), TimeUnit.SECONDS)
                 if (!await) {
-                    throw RuntimeException("Connect to node " + address + " timeout after "
+                    throw RuntimeException("Connect to node " + socketAddress + " timeout after "
                             + DEFAULT_CHANNEL_CONNECT_TIMEOUT_SECOND + " seconds.")
                 }
 
             }
         }
         if (channelAdapter.isOk) {
-            logger.info("Finish to connect to node {} .", address)
+            logger.info("Finish to connect to node {} .", socketAddress)
             return channelAdapter.geChannel()
         } else {
             logger.warn("createChannel : connect to remote node[{}] timeout")

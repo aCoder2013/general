@@ -7,5 +7,5 @@ import com.song.general.gossip.net.Message
  */
 interface MessageHandler {
 
-    fun <T> handleMessage(message: Message<T>)
+    fun handleMessage(message: Message)
 }

@@ -12,22 +12,23 @@ import org.slf4j.LoggerFactory
  */
 class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
 
+    init {
+        messageHandlers.put(GossipAction.GOSSIP_SYN, GossipDigestSynMessageHandler())
+    }
+
     @Throws(Exception::class)
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
-        val message = msg as Message<*>
-        message.action?.let {
-            val handler = getHandler(it)
-            handler?.handleMessage(message)
+        val message = msg as Message
+        message.action.let {
+            getHandler(it)?.handleMessage(message) ?: logger.warn("Ignore unknown message type : $message")
         }
     }
 
     @Throws(Exception::class)
-    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
-        logger.error("read message failed", cause)
-    }
+    override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) = logger.error("read message failed", cause)
 
     private fun getHandler(gossipAction: GossipAction): MessageHandler?
-            = messageHandlers.getOrDefault(gossipAction, PrintMessageHandler())
+            = messageHandlers[gossipAction]
 
     companion object {
 

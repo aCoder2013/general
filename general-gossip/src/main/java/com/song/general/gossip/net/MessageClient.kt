@@ -1,6 +1,7 @@
 package com.song.general.gossip.net
 
 import com.song.general.gossip.net.support.MessageFuture
+import java.net.SocketAddress
 
 /**
  * Created by song on 2017/8/20.
@@ -17,11 +18,11 @@ interface MessageClient : LifeCycle {
      * @param <T> 消息体具体具体承载了哪种类型
     </T> */
     @Throws(Exception::class)
-    fun <T> sendOneWay(address: String, message: Message<T>)
+    fun  sendOneWay(socketAddress: SocketAddress, message: Message)
 
     /**
      * 异步发送消息
      */
-    fun <T> sendAsync(address: String, message: Message<T>): MessageFuture<T>
+    fun  sendAsync(socketAddress: SocketAddress, message: Message): MessageFuture
 
 }

@@ -15,11 +15,12 @@ import io.netty.handler.codec.serialization.ObjectDecoder
 import io.netty.handler.codec.serialization.ObjectEncoder
 import io.netty.handler.logging.LoggingHandler
 import java.net.InetSocketAddress
+import java.net.SocketAddress
 
 /**
  * Created by song on 2017/8/20.
  */
-class DefaultMessageServer : MessageServer {
+class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
 
     private val bootstrap = ServerBootstrap()
 
@@ -61,7 +62,7 @@ class DefaultMessageServer : MessageServer {
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
 
         try {
-            bootstrap.bind().sync()
+            bootstrap.bind(socketAddress).sync()
         } catch (e: InterruptedException) {
             throw RuntimeException("Sync bind server got interrupted", e)
         }
