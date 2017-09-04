@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 import java.util.*
 import java.util.concurrent.*
+import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
@@ -19,7 +20,7 @@ import kotlin.collections.ArrayList
 /**
  * Created by song on 2017/8/13.
  */
-class Gossip(private val host: String, private val port: Int, private val seedProvider: SeedProvider) : LifeCycle {
+class Gossip private constructor(host: String, port: Int, private val seedProvider: SeedProvider) : LifeCycle {
 
     private val localSocketAddress: SocketAddress
 
@@ -193,6 +194,41 @@ class Gossip(private val host: String, private val port: Int, private val seedPr
 
         private val logger = LoggerFactory.getLogger(Gossip::class.java)
 
+        @Volatile
+        var INSTALCE: Gossip? = null
+
+        val instanceLock = ReentrantLock()
+
+        val instanceInitializedCondition: Condition = instanceLock.newCondition()
+
+        fun createInstance(host: String, port: Int, seedProvider: SeedProvider): Gossip {
+            if (INSTALCE == null) {
+                val lock = this.instanceLock
+                try {
+                    lock.lock()
+                    if (INSTALCE == null) {
+                        INSTALCE = Gossip(host, port, seedProvider)
+                        instanceInitializedCondition.signalAll()
+                    }
+                } finally {
+                    lock.unlock()
+                }
+            }
+            return INSTALCE as Gossip
+        }
+
+        fun getInstance(): Gossip {
+            if (INSTALCE == null) {
+                val lock = this.instanceLock
+                try {
+                    lock.lock()
+                    instanceInitializedCondition.await()
+                } finally {
+                    lock.unlock()
+                }
+            }
+            return INSTALCE as Gossip
+        }
     }
 
 }

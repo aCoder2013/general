@@ -3,6 +3,7 @@ package com.song.general.gossip
 import com.song.general.gossip.support.DefaultSeedProvider
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
 
 /**
  * Created by song on 2017/9/3.
@@ -15,18 +16,29 @@ class GossipTest {
 
     @Test
     fun send() {
+        getSeedProvider()
+    }
+
+    private fun getSeedProvider(): SeedProvider {
         val seedProvider = DefaultSeedProvider()
         seedProvider.addSeed("127.0.0.1:7006")
         seedProvider.addSeed("127.0.0.1:7005")
-        val gossip1 = Gossip("127.0.0.1", 7000, seedProvider)
-        gossip1.payload = "gossip1"
-        val gossip2 = Gossip("127.0.0.1", 7006, seedProvider)
-        gossip2.payload = "gossip2"
-        val gossip3 = Gossip("127.0.0.1", 7005, seedProvider)
-        gossip2.payload = "gossip3"
-        gossip1.start()
-        gossip2.start()
-        gossip3.start()
-        Thread.sleep(100000L)
+        return seedProvider
+    }
+
+    @Test
+    fun multiThreadCreateInstance() {
+        val latch = CountDownLatch(5)
+        for (i in 0..5) {
+            Thread({
+                if (i % 2 == 0) {
+                    val createInstance = Gossip.createInstance("127.0.0.1", 8080, getSeedProvider())
+                    println("${Thread.currentThread().name} :  create $createInstance")
+                } else {
+                    println("instance is ${Gossip.getInstance()}")
+                }
+            }).start()
+        }
+        Thread.sleep(500000)
     }
 }
