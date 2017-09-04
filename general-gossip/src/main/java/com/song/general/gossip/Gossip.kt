@@ -22,9 +22,9 @@ import kotlin.collections.ArrayList
  */
 class Gossip private constructor(host: String, port: Int, private val seedProvider: SeedProvider) : LifeCycle {
 
-    private val localSocketAddress: SocketAddress
+    val localSocketAddress: SocketAddress
 
-    private val intervalInMillis = 1000L
+    val intervalInMillis = 1000L
 
     private val scheduledGossipTaskExecutor: ScheduledExecutorService
 
@@ -197,9 +197,9 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
         @Volatile
         var INSTALCE: Gossip? = null
 
-        val instanceLock = ReentrantLock()
+        private val instanceLock = ReentrantLock()
 
-        val instanceInitializedCondition: Condition = instanceLock.newCondition()
+        val instanceInitialized: Condition = instanceLock.newCondition()
 
         fun createInstance(host: String, port: Int, seedProvider: SeedProvider): Gossip {
             if (INSTALCE == null) {
@@ -208,7 +208,7 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
                     lock.lock()
                     if (INSTALCE == null) {
                         INSTALCE = Gossip(host, port, seedProvider)
-                        instanceInitializedCondition.signalAll()
+                        instanceInitialized.signalAll()
                     }
                 } finally {
                     lock.unlock()
@@ -222,7 +222,7 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
                 val lock = this.instanceLock
                 try {
                     lock.lock()
-                    instanceInitializedCondition.await()
+                    instanceInitialized.await()
                 } finally {
                     lock.unlock()
                 }

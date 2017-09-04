@@ -1,7 +1,6 @@
 package com.song.general.gossip.net
 
 import com.song.general.gossip.GossipAction
-import com.song.general.gossip.net.support.GossipSocketAddress
 import java.io.Serializable
 import java.net.SocketAddress
 
