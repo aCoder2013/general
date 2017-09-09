@@ -1,4 +1,4 @@
-package com.song.general.gossip
+package com.song.general.gossip.utils
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -9,8 +9,6 @@ object GlobalVersionGenerator {
 
     private val VERSION = AtomicInteger()
 
-    fun nextVersion(): Int {
-        return VERSION.incrementAndGet()
-    }
+    fun nextVersion(): Int = VERSION.incrementAndGet()
 
 }

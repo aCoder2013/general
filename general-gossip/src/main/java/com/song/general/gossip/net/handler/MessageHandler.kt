@@ -1,4 +1,4 @@
-package com.song.general.gossip
+package com.song.general.gossip.net.handler
 
 import com.song.general.gossip.net.Message
 

@@ -2,6 +2,7 @@ package com.song.general.gossip
 
 import com.google.common.collect.ImmutableList
 import com.song.general.gossip.concurrent.DefaultThreadFactory
+import com.song.general.gossip.message.GossipDigestAckMessage
 import com.song.general.gossip.message.GossipDigestSynMessage
 import com.song.general.gossip.net.LifeCycle
 import com.song.general.gossip.net.Message
@@ -16,6 +17,7 @@ import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 /**
  * Created by song on 2017/8/13.
@@ -30,12 +32,12 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
 
     private val messageServer: DefaultMessageServer
 
-    private val messageClient: DefaultMessageClient
+    val messageClient: DefaultMessageClient
 
     private val taskLock: ReentrantLock
 
     @Volatile
-    private var firstSynSendAt = 0L
+    var firstSynSendAt = 0L
 
     private val random: ThreadLocalRandom
 
@@ -44,13 +46,13 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
      */
     var payload: String = ""
 
-    private val seeds: ConcurrentSkipListSet<SocketAddress>
+    val seeds: ConcurrentSkipListSet<SocketAddress>
 
-    private val liveEndpoints: ConcurrentSkipListSet<SocketAddress>
+    val liveEndpoints: ConcurrentSkipListSet<SocketAddress>
 
-    private val deadEndpoints: ConcurrentSkipListSet<SocketAddress>
+    val deadEndpoints: ConcurrentSkipListSet<SocketAddress>
 
-    private val endpointsMap: ConcurrentHashMap<SocketAddress, EndpointState>
+    val endpointsMap: ConcurrentHashMap<SocketAddress, EndpointState>
 
     init {
         this.localSocketAddress = NetUtils.string2SocketAddress("$host:$port")
@@ -72,6 +74,70 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
         initScheduledTask()
     }
 
+    fun applyStateLocally(endpointStateMap: Map<SocketAddress, EndpointState>) {
+        endpointStateMap.forEach { address, remoteEndpoint ->
+            val endpointState = this.endpointsMap.getOrElse(address, {
+                EndpointState(HeartbeatState(), ApplicationState(""))
+            })
+            if (remoteEndpoint.heartbeatState.generation > endpointState.heartbeatState.generation
+                    && remoteEndpoint.heartbeatState.version > endpointState.heartbeatState.version) {
+                if (remoteEndpoint.applicationState.status == ApplicationState.StatusEnum.UP) {
+                    logger.info("Node $address now is up.")
+                } else {
+                    logger.info("Node $address now is down.")
+                }
+                this.endpointsMap.put(address, remoteEndpoint)
+            }
+        }
+    }
+
+    fun mergeDigest(gossipDigest: List<GossipDigest>): GossipDigestAckMessage {
+        val requestGossipDigests = ArrayList<GossipDigest>()
+        val requestEndpointMap = HashMap<SocketAddress, EndpointState>()
+        val gossipAckMessage = GossipDigestAckMessage(requestGossipDigests, requestEndpointMap)
+        if (gossipDigest.isEmpty()) {
+            logger.trace("Ignore empty gossip digests.")
+            return gossipAckMessage
+        }
+        gossipDigest.forEach { gossipDigest ->
+            val remoteGeneration = gossipDigest.generation
+            val remoteVersion = gossipDigest.version
+            val endpointState = this.endpointsMap[gossipDigest.socketAddress]
+            if (endpointState != null) {
+                val localGeneration = endpointState.heartbeatState.generation
+                val localVersion = endpointState.heartbeatState.version
+                if (remoteGeneration == localGeneration && remoteVersion == localVersion) {
+                    logger.trace("Remote node has the same info with local node, so ignore.")
+                    return@forEach
+                }
+                if (remoteGeneration > localGeneration) {
+                    requestFromRemote(gossipDigest.socketAddress, remoteGeneration, requestGossipDigests)
+                } else if (remoteGeneration < localGeneration) {
+                    sendToRemote(gossipDigest.socketAddress, endpointState, requestEndpointMap)
+                } else if (remoteGeneration == localGeneration) {
+                    if (remoteVersion > localVersion) {
+                        requestFromRemote(gossipDigest.socketAddress, remoteGeneration, requestGossipDigests)
+                    } else if (remoteVersion < localVersion) {
+                        sendToRemote(gossipDigest.socketAddress, endpointState, requestEndpointMap)
+                    }
+                }
+            } else {
+                requestFromRemote(gossipDigest.socketAddress, remoteGeneration, requestGossipDigests)
+            }
+        }
+        return gossipAckMessage
+    }
+
+    private fun requestFromRemote(remoteAddress: SocketAddress, generation: Long, requestGossipDigests: MutableList<GossipDigest>) {
+        logger.trace("Request from remote for $remoteAddress")
+        requestGossipDigests.add(GossipDigest(remoteAddress, generation, 0))
+    }
+
+    private fun sendToRemote(remoteAddress: SocketAddress, endpointState: EndpointState, requestEndpointStateMap: MutableMap<SocketAddress, EndpointState>) {
+        logger.trace("Send endpoint to remote node $remoteAddress ")
+        requestEndpointStateMap.put(remoteAddress, endpointState)
+    }
+
     override fun shutDown() {
         messageClient.shutDown()
         messageServer.shutDown()
@@ -82,8 +148,8 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
         override fun run() {
             try {
                 taskLock.lock()
-                endpointsMap[localSocketAddress]?.heartbeatState?.updateHeartbeat()
-                logger.trace("Heartbeat of local endpoint is {}", endpointsMap[localSocketAddress]?.heartbeatState?.version ?: 0)
+                val localEndpointState = endpointsMap[localSocketAddress] ?: throw RuntimeException("Local endpoint is null,please check.")
+                logger.trace("Heartbeat of local endpoint is {}", localEndpointState.heartbeatState.version)
                 val gossipDigests = fetchRandomGossipDigests()
                 if (gossipDigests.isNotEmpty()) {
                     val message = Message(localSocketAddress, GossipAction.GOSSIP_SYN, GossipDigestSynMessage(gossipDigests))
@@ -195,30 +261,30 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
         private val logger = LoggerFactory.getLogger(Gossip::class.java)
 
         @Volatile
-        var INSTALCE: Gossip? = null
+        private var INSTANCE: Gossip? = null
 
         private val instanceLock = ReentrantLock()
 
         val instanceInitialized: Condition = instanceLock.newCondition()
 
         fun createInstance(host: String, port: Int, seedProvider: SeedProvider): Gossip {
-            if (INSTALCE == null) {
+            if (INSTANCE == null) {
                 val lock = this.instanceLock
                 try {
                     lock.lock()
-                    if (INSTALCE == null) {
-                        INSTALCE = Gossip(host, port, seedProvider)
+                    if (INSTANCE == null) {
+                        INSTANCE = Gossip(host, port, seedProvider)
                         instanceInitialized.signalAll()
                     }
                 } finally {
                     lock.unlock()
                 }
             }
-            return INSTALCE as Gossip
+            return INSTANCE as Gossip
         }
 
         fun getInstance(): Gossip {
-            if (INSTALCE == null) {
+            if (INSTANCE == null) {
                 val lock = this.instanceLock
                 try {
                     lock.lock()
@@ -227,7 +293,7 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
                     lock.unlock()
                 }
             }
-            return INSTALCE as Gossip
+            return INSTANCE as Gossip
         }
     }
 

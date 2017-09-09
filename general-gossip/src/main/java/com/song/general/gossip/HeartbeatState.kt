@@ -1,5 +1,7 @@
 package com.song.general.gossip
 
+import com.song.general.gossip.utils.GlobalVersionGenerator
+
 /**
  * Created by song on 2017/9/2.
  */

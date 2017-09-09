@@ -15,7 +15,5 @@ object JsonUtils {
 
     fun toJson(obj: Any): String = gson.toJson(obj)
 
-    inline fun <reified T> fromJson(json: String): T {
-        return gson.fromJson(json, T::class.java)
-    }
+    inline fun <reified T> fromJson(json: String): T = gson.fromJson(json, T::class.java)
 }

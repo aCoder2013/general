@@ -1,8 +1,9 @@
 package com.song.general.gossip.net.handler
 
 import com.song.general.gossip.Gossip
-import com.song.general.gossip.MessageHandler
+import com.song.general.gossip.GossipAction
 import com.song.general.gossip.message.GossipDigestSynMessage
+import com.song.general.gossip.net.handler.MessageHandler
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.utils.JsonUtils
 import org.slf4j.LoggerFactory
@@ -16,13 +17,17 @@ class GossipDigestSynMessageHandler : MessageHandler {
         logger.trace("Received message ${JsonUtils.toJson(message)}")
         val from = message.from
         if (Gossip.getInstance().localSocketAddress == from) {
-            logger.warn("Ignore message{${JsonUtils.toJson(message)}} sending from itself.")
+            logger.warn("Ignore message {${JsonUtils.toJson(message)}} sending from itself.")
+            return
+        }
+        if (message.createTime < Gossip.getInstance().firstSynSendAt) {
+            logger.warn("Ignore message received before startup.")
             return
         }
         val digestSynMessage = message.payload as GossipDigestSynMessage
-        for (gossipDigest in digestSynMessage.gossipDigests) {
-
-        }
+        val gossipDigestAckMessage = Gossip.getInstance().mergeDigest(digestSynMessage.gossipDigests)
+        val msg = Message(Gossip.getInstance().localSocketAddress, GossipAction.GOSSIP_ACK, gossipDigestAckMessage)
+        Gossip.getInstance().messageClient.sendOneWay(from, msg)
     }
 
     companion object {
