@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder
 /**
  * Created by song on 2017/9/3.
  */
-object JsonUtils {
+object GsonUtils {
 
     /**
      * Thread safe gson instance.

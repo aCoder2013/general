@@ -3,7 +3,7 @@ package com.song.general.gossip.net.handler
 import com.song.general.gossip.GossipAction
 import com.song.general.gossip.net.handler.MessageHandler
 import com.song.general.gossip.net.Message
-import com.song.general.gossip.utils.JsonUtils
+import com.song.general.gossip.utils.GsonUtils
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import org.slf4j.LoggerFactory
@@ -24,7 +24,7 @@ class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
     override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
         val message = msg as Message
         message.action.let {
-            getHandler(it)?.handleMessage(message) ?: logger.warn("Ignore unknown message type : ${JsonUtils.toJson(message)}")
+            getHandler(it)?.handleMessage(message) ?: logger.warn("Ignore unknown message type : ${GsonUtils.toJson(message)}")
         }
     }
 

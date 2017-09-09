@@ -1,7 +1,7 @@
 package com.song.general.gossip.message
 
 import com.song.general.gossip.GossipDigest
-import com.song.general.gossip.utils.JsonUtils
+import com.song.general.gossip.utils.GsonUtils
 import java.io.Serializable
 
 /**
@@ -10,6 +10,6 @@ import java.io.Serializable
 class GossipDigestSynMessage(val gossipDigests: List<GossipDigest>) : Serializable {
 
     override fun toString(): String {
-        return JsonUtils.toJson(this)
+        return GsonUtils.toJson(this)
     }
 }

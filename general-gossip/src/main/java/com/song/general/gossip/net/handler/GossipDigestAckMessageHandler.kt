@@ -7,7 +7,7 @@ import com.song.general.gossip.message.GossipDigestAck2Message
 import com.song.general.gossip.message.GossipDigestAckMessage
 import com.song.general.gossip.net.handler.MessageHandler
 import com.song.general.gossip.net.Message
-import com.song.general.gossip.utils.JsonUtils
+import com.song.general.gossip.utils.GsonUtils
 import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 
@@ -23,7 +23,7 @@ class GossipDigestAckMessageHandler : MessageHandler {
          */
         if (Gossip.getInstance().firstSynSendAt == 0L
                 || (System.nanoTime() - Gossip.getInstance().firstSynSendAt < 0L)) {
-            logger.info("Ignore invalid ack message ${JsonUtils.toJson(message)}")
+            logger.info("Ignore invalid ack message ${GsonUtils.toJson(message)}")
             return
         }
         val gossipDigestAckMessage = message.payload as GossipDigestAckMessage
