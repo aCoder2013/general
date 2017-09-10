@@ -1,5 +1,6 @@
 package com.song.general.gossip.net.support
 
+import com.song.general.gossip.Gossip
 import com.song.general.gossip.concurrent.DefaultThreadFactory
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.net.MessageClient
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock
 /**
  * Created by song on 2017/8/20.
  */
-class DefaultMessageClient : MessageClient {
+class DefaultMessageClient(val gossip: Gossip) : MessageClient {
 
     private val coreNum = Runtime.getRuntime().availableProcessors()
 
@@ -61,7 +62,7 @@ class DefaultMessageClient : MessageClient {
                                         .weakCachingResolver(Thread.currentThread().contextClassLoader)))
                                 .addLast(IdleStateHandler(0, 0, DEFAULT_CONNECTION_IDLE_SECONDS))
                                 .addLast(messageGroup, "messageDispatcher",
-                                        InboundMessageDispatchHandler())
+                                        InboundMessageDispatchHandler(gossip))
                     }
                 })
         logger

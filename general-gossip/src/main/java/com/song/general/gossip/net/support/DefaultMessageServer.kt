@@ -1,5 +1,6 @@
 package com.song.general.gossip.net.support
 
+import com.song.general.gossip.Gossip
 import com.song.general.gossip.net.MessageServer
 import com.song.general.gossip.net.config.MessageConfig
 import com.song.general.gossip.net.handler.InboundMessageDispatchHandler
@@ -15,12 +16,11 @@ import io.netty.handler.codec.serialization.ObjectDecoder
 import io.netty.handler.codec.serialization.ObjectEncoder
 import io.netty.handler.logging.LoggingHandler
 import java.net.InetSocketAddress
-import java.net.SocketAddress
 
 /**
  * Created by song on 2017/8/20.
  */
-class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
+class DefaultMessageServer(val gossip: Gossip) : MessageServer {
 
     private val bootstrap = ServerBootstrap()
 
@@ -53,15 +53,14 @@ class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
                                     业务逻辑在自己的线程池中处理，避免阻塞IO线程
                                 */
                                 .addLast(messageGroup, "messageDispatcher",
-                                        InboundMessageDispatchHandler())
+                                        InboundMessageDispatchHandler(gossip))
                     }
                 })
         try {
-            bootstrap.bind(socketAddress).sync()
+            bootstrap.bind(gossip.localSocketAddress).sync()
         } catch (e: InterruptedException) {
             throw RuntimeException("Sync bind server got interrupted", e)
         }
-
     }
 
     override fun shutDown() {

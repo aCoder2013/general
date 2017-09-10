@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 import java.net.SocketAddress
 import java.util.*
 import java.util.concurrent.*
-import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Consumer
 import kotlin.collections.ArrayList
@@ -22,7 +21,7 @@ import kotlin.collections.HashMap
 /**
  * Created by song on 2017/8/13.
  */
-class Gossip private constructor(host: String, port: Int, private val seedProvider: SeedProvider) : LifeCycle {
+class Gossip(host: String, port: Int, private val seedProvider: SeedProvider) : LifeCycle {
 
     val localSocketAddress: SocketAddress
 
@@ -57,8 +56,8 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
     init {
         this.localSocketAddress = NetUtils.string2SocketAddress("$host:$port")
         this.scheduledGossipTaskExecutor = Executors.newSingleThreadScheduledExecutor(DefaultThreadFactory("Scheduled-Gossip-Task"))
-        this.messageServer = DefaultMessageServer(localSocketAddress)
-        this.messageClient = DefaultMessageClient()
+        this.messageServer = DefaultMessageServer(this)
+        this.messageClient = DefaultMessageClient(this)
         this.taskLock = ReentrantLock()
         this.random = ThreadLocalRandom.current()
         this.seeds = ConcurrentSkipListSet<SocketAddress>()
@@ -260,41 +259,6 @@ class Gossip private constructor(host: String, port: Int, private val seedProvid
 
         private val logger = LoggerFactory.getLogger(Gossip::class.java)
 
-        @Volatile
-        private var INSTANCE: Gossip? = null
-
-        private val instanceLock = ReentrantLock()
-
-        val instanceInitialized: Condition = instanceLock.newCondition()
-
-        fun createInstance(host: String, port: Int, seedProvider: SeedProvider): Gossip {
-            if (INSTANCE == null) {
-                val lock = this.instanceLock
-                try {
-                    lock.lock()
-                    if (INSTANCE == null) {
-                        INSTANCE = Gossip(host, port, seedProvider)
-                        instanceInitialized.signalAll()
-                    }
-                } finally {
-                    lock.unlock()
-                }
-            }
-            return INSTANCE as Gossip
-        }
-
-        fun getInstance(): Gossip {
-            if (INSTANCE == null) {
-                val lock = this.instanceLock
-                try {
-                    lock.lock()
-                    instanceInitialized.await()
-                } finally {
-                    lock.unlock()
-                }
-            }
-            return INSTANCE as Gossip
-        }
     }
 
 }

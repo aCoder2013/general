@@ -1,5 +1,6 @@
 package com.song.general.gossip.net.handler
 
+import com.song.general.gossip.Gossip
 import com.song.general.gossip.GossipAction
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.utils.GsonUtils
@@ -10,15 +11,15 @@ import org.slf4j.LoggerFactory
 /**
  * Created by song on 2017/8/19.
  */
-class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
+class InboundMessageDispatchHandler(val gossip: Gossip) : ChannelInboundHandlerAdapter() {
 
     init {
         /*
             register message handlers.
          */
-        messageHandlers.put(GossipAction.GOSSIP_SYN, GossipDigestSynMessageHandler())
-        messageHandlers.put(GossipAction.GOSSIP_ACK, GossipDigestAckMessageHandler())
-        messageHandlers.put(GossipAction.GOSSIP_ACK_2, GossipDigestAck2MessageHandler())
+        messageHandlers.put(GossipAction.GOSSIP_SYN, GossipDigestSynMessageHandler(gossip))
+        messageHandlers.put(GossipAction.GOSSIP_ACK, GossipDigestAckMessageHandler(gossip))
+        messageHandlers.put(GossipAction.GOSSIP_ACK_2, GossipDigestAck2MessageHandler(gossip))
     }
 
     @Throws(Exception::class)
