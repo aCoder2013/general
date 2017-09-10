@@ -24,16 +24,14 @@ class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
 
     private val bootstrap = ServerBootstrap()
 
-    private var bossGroup: EventLoopGroup? = null
-    private var workerGroup: EventLoopGroup? = null
-    private var messageGroup: EventLoopGroup? = null
+    private val coreNum = Runtime.getRuntime().availableProcessors()
+
+    private var bossGroup: EventLoopGroup = NioEventLoopGroup(coreNum)
+    private var workerGroup: EventLoopGroup = NioEventLoopGroup(coreNum * 2)
+    private var messageGroup: EventLoopGroup = NioEventLoopGroup(coreNum * 2)
 
     override fun start() {
-        val coreNum = Runtime.getRuntime().availableProcessors()
-        bossGroup = NioEventLoopGroup(coreNum)
-        workerGroup = NioEventLoopGroup(coreNum * 2)
-        messageGroup = NioEventLoopGroup(coreNum * 2)
-        bootstrap.group(bossGroup!!, workerGroup!!)
+        bootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel::class.java)
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .option(ChannelOption.SO_REUSEADDR, true)
@@ -70,8 +68,8 @@ class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
     }
 
     override fun shutDown() {
-        bossGroup?.shutdownGracefully()
-        workerGroup?.shutdownGracefully()
-        messageGroup?.shutdownGracefully()
+        bossGroup.shutdownGracefully()
+        workerGroup.shutdownGracefully()
+        messageGroup.shutdownGracefully()
     }
 }

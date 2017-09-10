@@ -30,9 +30,13 @@ import java.util.concurrent.locks.ReentrantLock
  */
 class DefaultMessageClient : MessageClient {
 
-    private var workerGroup: EventLoopGroup? = null
+    private val coreNum = Runtime.getRuntime().availableProcessors()
 
-    private var messageGroup: DefaultEventExecutorGroup? = null
+    private var workerGroup: EventLoopGroup = NioEventLoopGroup(coreNum,
+            DefaultThreadFactory("Message-client-service"))
+
+    private var messageGroup: DefaultEventExecutorGroup = DefaultEventExecutorGroup(coreNum * 2,
+            DefaultThreadFactory("Message-client-worker"))
 
     private val bootstrap = Bootstrap()
 
@@ -43,12 +47,7 @@ class DefaultMessageClient : MessageClient {
     override fun start() {
         logger.info("Start to init MessageClient")
         val start = System.currentTimeMillis()
-        val coreNum = Runtime.getRuntime().availableProcessors()
-        workerGroup = NioEventLoopGroup(coreNum,
-                DefaultThreadFactory("Message-client-service"))
-        messageGroup = DefaultEventExecutorGroup(coreNum * 2,
-                DefaultThreadFactory("Message-client-worker"))
-        bootstrap.group(workerGroup!!)
+        bootstrap.group(workerGroup)
                 .channel(NioSocketChannel::class.java)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, true)
@@ -70,8 +69,8 @@ class DefaultMessageClient : MessageClient {
     }
 
     override fun shutDown() {
-        workerGroup?.shutdownGracefully()
-        messageGroup?.shutdownGracefully()
+        workerGroup.shutdownGracefully()
+        messageGroup.shutdownGracefully()
     }
 
     @Throws(Exception::class)
