@@ -36,14 +36,13 @@ class DefaultMessageClient : MessageClient {
 
     private val bootstrap = Bootstrap()
 
-    private var createChannelLock: Lock? = null
+    private val createChannelLock: Lock = ReentrantLock()
 
     private val channelCache = ConcurrentHashMap<SocketAddress/*address of the node*/, ChannelAdapter>()
 
     override fun start() {
         logger.info("Start to init MessageClient")
         val start = System.currentTimeMillis()
-        this.createChannelLock = ReentrantLock()
         val coreNum = Runtime.getRuntime().availableProcessors()
         workerGroup = NioEventLoopGroup(coreNum,
                 DefaultThreadFactory("Message-client-service"))
@@ -128,7 +127,7 @@ class DefaultMessageClient : MessageClient {
             }
         }
         if (!channelAdapter.isOk) {
-            if (this.createChannelLock!!.tryLock()) {
+            if (this.createChannelLock.tryLock()) {
                 logger.info("Try to connect to node {} .", socketAddress)
                 try {
                     val channelFuture = this.bootstrap
@@ -152,7 +151,7 @@ class DefaultMessageClient : MessageClient {
                 } catch (e: Exception) {
                     logger.error("createChannel: connect to node[{}] failed.", socketAddress, e)
                 } finally {
-                    this.createChannelLock!!.unlock()
+                    this.createChannelLock.unlock()
                 }
             } else {
                 logger.info(
