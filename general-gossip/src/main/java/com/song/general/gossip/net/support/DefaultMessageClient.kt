@@ -111,10 +111,8 @@ class DefaultMessageClient : MessageClient {
                 }
             }
         } else {
-            if (cause != null) {
-                messageFuture.isSuccess = false
-                messageFuture.cause(cause)
-            }
+            messageFuture.isSuccess = false
+            cause?.let { messageFuture.cause(it) }
         }
         return messageFuture
     }
