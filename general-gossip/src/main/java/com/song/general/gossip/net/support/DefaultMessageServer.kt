@@ -70,14 +70,8 @@ class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
     }
 
     override fun shutDown() {
-        if (bossGroup != null) {
-            bossGroup!!.shutdownGracefully()
-        }
-        if (workerGroup != null) {
-            workerGroup!!.shutdownGracefully()
-        }
-        if (messageGroup != null) {
-            messageGroup!!.shutdownGracefully()
-        }
+        bossGroup?.shutdownGracefully()
+        workerGroup?.shutdownGracefully()
+        messageGroup?.shutdownGracefully()
     }
 }

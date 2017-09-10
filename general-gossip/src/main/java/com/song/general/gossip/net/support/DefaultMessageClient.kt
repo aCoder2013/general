@@ -71,16 +71,12 @@ class DefaultMessageClient : MessageClient {
     }
 
     override fun shutDown() {
-        if (workerGroup != null) {
-            workerGroup!!.shutdownGracefully()
-        }
-        if (messageGroup != null) {
-            messageGroup!!.shutdownGracefully()
-        }
+        workerGroup?.shutdownGracefully()
+        messageGroup?.shutdownGracefully()
     }
 
     @Throws(Exception::class)
-    override fun  sendOneWay(socketAddress: SocketAddress, message: Message) {
+    override fun sendOneWay(socketAddress: SocketAddress, message: Message) {
         val channel = getOrCreateChannel(socketAddress)
         if (channel != null) {
             channel.writeAndFlush(message).addListener({ future ->
@@ -95,7 +91,7 @@ class DefaultMessageClient : MessageClient {
         }
     }
 
-    override fun  sendAsync(socketAddress: SocketAddress, message: Message): MessageFuture {
+    override fun sendAsync(socketAddress: SocketAddress, message: Message): MessageFuture {
         var channel: Channel? = null
         var cause: Throwable? = null
         try {
