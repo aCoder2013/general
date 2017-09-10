@@ -56,9 +56,6 @@ class DefaultMessageServer(val socketAddress: SocketAddress) : MessageServer {
                                         InboundMessageDispatchHandler())
                     }
                 })
-                .option(ChannelOption.SO_BACKLOG, 128)
-                .childOption(ChannelOption.SO_KEEPALIVE, true)
-
         try {
             bootstrap.bind(socketAddress).sync()
         } catch (e: InterruptedException) {
