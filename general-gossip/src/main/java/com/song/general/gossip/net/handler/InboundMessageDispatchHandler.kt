@@ -1,7 +1,6 @@
 package com.song.general.gossip.net.handler
 
 import com.song.general.gossip.GossipAction
-import com.song.general.gossip.net.handler.MessageHandler
 import com.song.general.gossip.net.Message
 import com.song.general.gossip.utils.GsonUtils
 import io.netty.channel.ChannelHandlerContext
@@ -18,6 +17,8 @@ class InboundMessageDispatchHandler : ChannelInboundHandlerAdapter() {
             register message handlers.
          */
         messageHandlers.put(GossipAction.GOSSIP_SYN, GossipDigestSynMessageHandler())
+        messageHandlers.put(GossipAction.GOSSIP_ACK, GossipDigestAckMessageHandler())
+        messageHandlers.put(GossipAction.GOSSIP_ACK_2, GossipDigestAck2MessageHandler())
     }
 
     @Throws(Exception::class)
